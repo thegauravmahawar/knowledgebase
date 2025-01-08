@@ -103,68 +103,100 @@ h1 {
 
 **Using components**
 
-One advantage of component architecture is that your application is modular. In other words, components can be used in other components.
+You build an application by composing multiple components together. For example, if you are building a user profile page, you might break the page up into several components like this:
 
-To use a component, you need to:
+![Angular Component Example](../assets/angular_component_example.png)
 
-- Import the component into the file.
-- Add it to the component's `imports` array.
-- Use the component's selector in the `template`.
+Here, the `UserProfile` component uses several other components to produce the final page.
+
+To import and use a component, you need to:
+
+1. In your component's TypeScript file, add an import statement for the component you want to use.
+2. In your @Component decorator, add an entry to the imports array for the component you want to use.
+3. In your component's template, add an element that matches the selector of the component you want to use.
+
+Here's an example of a `UserProfile` component importing a `ProfilePhoto` component:
 
 ```typescript
-// user-list.component.ts
-import { UserProfile } from "./user-profile.ts";
+// user-profile.ts
+import { ProfilePhoto } from "profile-photo.ts";
 @Component({
-  imports: [UserProfile],
+  selector: "user-profile",
+  imports: [ProfilePhoto],
   template: `
-    <ul>
-      <user-profile></user-profile>
-    </ul>
+    <h1>User profile</h1>
+    <profile-photo />
+    <p>This is the user profile page</p>
   `,
 })
-export class UserList {}
-```
-
-### Managing Dynamic Data
-
-**What is a state?**
-
-Components let you neatly encapsulate responsibility for discrete parts of your application. For example, a `SignUpForm` component might need to keep track of whether the form is valid or not before allowing users to take a specific action. As a result, the various properties that a component needs to track is often referred to as "state."
-
-**Defining a state**
-
-For example, using the `TodoListItem` component, create two properties that you want to track:
-
-1. `taskTitle` — What the title of the task is
-2. `isComplete` — Whether or not the task is complete
-
-```typescript
-@Component({ ... })
-export class TodoListItem {
-  taskTitle = '';
-  isComplete = false;
+export class UserProfile {
+  // Component behavior is defined in here
 }
 ```
 
-**Updating state**
+### Signals
 
-When you want to update state, this is typically accomplished by defining methods in the component class that can access the various class fields with the `this` keyword.
+In Angular, you use _signals_ to create and manage state. A signal is a lightweight wrapper around a value.
+
+Use the `signal` function to create a signal for holding local state:
 
 ```typescript
-@Component({ ... })
-export class TodoListItem {
-  taskTitle = '';
-  isComplete = false;
-  completeTask() {
-    this.isComplete = true;
-  }
-  updateTitle(newTitle: string) {
-    this.taskTitle = newTitle;
+import { signal } from "@angular/core";
+// Create a signal with the `signal` function.
+const firstName = signal("Morgan");
+// Read a signal value by calling it— signals are functions.
+console.log(firstName());
+// Change the value of this signal by calling its `set` method with a new value.
+firstName.set("Jaime");
+// You can also use the `update` method to change the value
+// based on the previous value.
+firstName.update((name) => name.toUpperCase());
+```
+
+Angular tracks where signals are read and when they're updated. The framework uses this information to do additional work, such as updating the DOM with new state. This ability to respond to changing signal values over time is known as reactivity.
+
+**Computed expressions**
+
+A `computed` is a signal that produces its value based on other signals.
+
+```typescript
+import { signal, computed } from "@angular/core";
+const firstName = signal("Morgan");
+const firstNameCapitalized = computed(() => firstName().toUpperCase());
+console.log(firstNameCapitalized()); // MORGAN
+```
+
+A `computed` signal is read-only; it does not have a `set` or an `update` method. Instead, the value of the `computed` signal automatically changes when any of the signals it reads change:
+
+```typescript
+import { signal, computed } from "@angular/core";
+const firstName = signal("Morgan");
+const firstNameCapitalized = computed(() => firstName().toUpperCase());
+console.log(firstNameCapitalized()); // MORGAN
+firstName.set("Jaime");
+console.log(firstNameCapitalized()); // JAIME
+```
+
+**Using signals in components**
+
+Use `signal` and `computed` inside your components to create and manage state:
+
+```typescript
+@Component({
+  /* ... */
+})
+export class UserProfile {
+  isTrial = signal(false);
+  isTrialExpired = signal(false);
+  showTrialDuration = computed(() => this.isTrial() && !this.isTrialExpired());
+
+  activateTrial() {
+    this.isTrial.set(true);
   }
 }
 ```
 
-### Rendering Dynamic Data
+### Dyanmic interfaces with templates
 
 When you need to display dynamic content in your template, Angular uses the double curly brace syntax in order to distinguish between static and dynamic content.
 

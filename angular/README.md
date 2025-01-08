@@ -196,7 +196,7 @@ export class UserProfile {
 }
 ```
 
-### Dyanmic interfaces with templates
+### Dynamic interfaces with templates
 
 When you need to display dynamic content in your template, Angular uses the double curly brace syntax in order to distinguish between static and dynamic content.
 

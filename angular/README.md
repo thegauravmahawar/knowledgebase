@@ -198,119 +198,139 @@ export class UserProfile {
 
 ### Dynamic interfaces with templates
 
-When you need to display dynamic content in your template, Angular uses the double curly brace syntax in order to distinguish between static and dynamic content.
+In Angular, a binding creates a dynamic connection between a component's template and its data. This connection ensures that changes to the component's data automatically update the rendered template.
+
+You can create a binding to show some dynamic text in a template by using double curly-braces:
 
 ```typescript
 @Component({
-  selector: "todo-list-item",
-  template: ` <p>Title: {{ taskTitle }}</p> `,
+  selector: "user-profile",
+  template: `<h1>Profile for {{ userName() }}</h1>`,
 })
 export class TodoListItem {
-  taskTitle = "Read cup of coffee";
+  userName = signal("pro_programmer_123");
 }
 ```
 
-When Angular renders the component you'll see the output:
+When Angular renders the component, you see:
 
 ```html
-<p>Title: Read cup of coffee</p>
+<h1>Profile for pro_programmer_123</h1>
 ```
 
-This syntax declares an interpolation between the dynamic data property inside of the HTML. As a result, whenever the data changes, Angular will automatically update the DOM reflecting the new value of the property.
+Angular automatically keeps the binding up-to-date when the value of the signal changes. Building on the example above, if we update the value of the `userName` signal:
 
-**Dynamic Properties**
+```typescript
+this.userName.set("cool_coder_789");
+```
 
-When you need to dynamically set the value of standard DOM properties on an HTML element, the property is wrapped in square brackets to inform Angular that the declared value should be interpreted as a JavaScript-like statement instead of a plain string.
+The rendered page updates to reflect the new value:
 
-For example, a common example of dynamically updating properties in your HTML is determining whether the form submit button should be disabled based on whether the form is valid or not.
+```html
+<h1>Profile for cool_coder_789</h1>
+```
+
+**Setting dynamic properties and attributes**
+
+Angular supports binding dynamic values into DOM properties with square brackets:
 
 ```typescript
 @Component({
-  selector: "sign-up-form",
-  template: `
-    <button type="submit" [disabled]="formIsInvalid">Submit</button>
-  `,
+  /*...*/
+  // Set the `disabled` property of the button based on the value of `isValidUserId`.
+  template: `<button [disabled]="isValidUserId()">Save changes</button>`,
 })
-export class SignUpForm {
-  formIsInvalid = true;
+export class UserProfile {
+  isValidUserId = signal(false);
 }
 ```
 
-In this example, because `formIsInvalid` is true, the rendered HTML would be:
+You can also bind to HTML attributes by prefixing the attribute name with `attr.`:
 
 ```html
-<button type="submit" disabled>Submit</button>
+<!-- Bind the `role` attribute on the `<ul>` element to value of `listRole`. -->
+<ul [attr.role]="listRole()"></ul>
 ```
 
-### Conditionals & Loops
+Angular automatically updates DOM properties and attribute when the bound value changes.
 
-**Conditional Rendering**
+**Handling user interaction**
 
-`@if` block
+Angular lets you add event listeners to an element in your template with parentheses:
 
 ```typescript
 @Component({
-  standalone: true,
-  selector: "user-controls",
-  template: `
-    @if (isAdmin) {
-    <button>Erase database</button>
-    }
-  `,
+  /*...*/
+  // Add an 'click' event handler that calls the `cancelSubscription` method.
+  template: `<button (click)="cancelSubscription()">
+    Cancel subscription
+  </button>`,
 })
-export class UserControls {
-  isAdmin = true;
+export class UserProfile {
+  /* ... */
+
+  cancelSubscription() {
+    /* Your event handling code goes here. */
+  }
 }
 ```
 
-`@else` block
+If you need to pass the `event` object to your listener, you can use Angular's built-in `$event` variable inside the function call:
 
 ```typescript
 @Component({
-  standalone: true,
-  selector: "user-controls",
-  template: `
-    @if (isAdmin) {
-    <button>Erase database</button>
-    } @else {
-    <p>You are not authorized.</p>
-    }
-  `,
+  /*...*/
+  // Add an 'click' event handler that calls the `cancelSubscription` method.
+  template: `<button (click)="cancelSubscription($event)">
+    Cancel subscription
+  </button>`,
 })
-export class UserControls {
-  isAdmin = true;
+export class UserProfile {
+  /* ... */
+
+  cancelSubscription(event: Event) {
+    /* Your event handling code goes here. */
+  }
 }
 ```
 
-**Rendering a list**
+**Control flow with `@if` and `@for`**
 
-`@for` block
+You can conditionally hide and show parts of a template with Angular's `@if` block:
 
 ```html
-<ul>
-  @for (ingredient of ingredientList; track ingredient.name) {
-  <li>{{ ingredient.quantity }} - {{ ingredient.name }}</li>
+<h1>User profile</h1>
+
+@if (isAdmin()) {
+<h2>Admin settings</h2>
+<!-- ... -->
+}
+```
+
+The `@if` block also supports an optional `@else` block:
+
+```html
+<h1>User profile</h1>
+
+@if (isAdmin()) {
+<h2>Admin settings</h2>
+<!-- ... -->
+} @else {
+<h2>User settings</h2>
+<!-- ... -->
+}
+```
+
+You can repeat part of a template multiple times with Angular's `@for` block:
+
+```typescript
+<h1>User profile</h1>
+
+<ul class="user-badge-list">
+  @for (badge of badges(); track badge.id) {
+    <li class="user-badge">{{badge.name}}</li>
   }
 </ul>
 ```
 
-```typescript
-@Component({
-  standalone: true,
-  selector: "ingredient-list",
-  templateUrl: "./ingredient-list.component.html",
-})
-export class IngredientList {
-  ingredientList = [
-    { name: "noodles", quantity: 1 },
-    { name: "miso broth", quantity: 1 },
-    { name: "egg", quantity: 2 },
-  ];
-}
-```
-
-`track` property
-
-When Angular renders a list of elements with `@for`, those items can later change or move. Angular needs to track each element through any reordering, usually by treating a property of the item as a unique identifier or key.
-
-This ensures any updates to the list are reflected correctly in the UI and tracked properly within Angular, especially in the case of stateful elements or animations.
+Angular's uses the `track` keyword, shown in the example above, to associate data with the DOM elements created by `@for`.
